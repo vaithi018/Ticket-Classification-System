@@ -12,7 +12,10 @@ class Config:
 
     # Database
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'tickets.db')}"
+    if os.getenv("VERCEL"):
+        SQLALCHEMY_DATABASE_URI = "sqlite:////tmp/tickets.db"
+    else:
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(BASE_DIR, 'tickets.db')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # OpenAI
