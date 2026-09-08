@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicketMind AI - Intelligent Support Ticket Triage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: rgba(19, 26, 43, 0.7);
+            --bg-card-hover: rgba(28, 38, 62, 0.85);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.3);
+            
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --primary-accent: #818cf8;
+            --secondary: #ec4899;
+            --cyan-glow: #06b6d4;
+
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dim: #6b7280;
+
+            --priority-critical: #ef4444;
+            --priority-high: #f97316;
+            --priority-medium: #3b82f6;
+            --priority-low: #10b981;
+
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(6, 182, 212, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Glassmorphism Container */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* Header */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(9, 13, 22, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 1rem 2rem;
+        }
+
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.25rem;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .brand-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-badge {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary-accent);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Layout Main */
+        main {
+            max-width: 1280px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            flex: 1;
+        }
+
+        /* Hero Banner */
+        .hero {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .stat-card {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+        }
+
+        .stat-info h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+
+        .stat-info p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Main Grid (Submission Form + Realtime AI Box) */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.75rem;
+        }
+
+        @media (max-width: 900px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section {
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .section-header i {
+            color: var(--primary-accent);
+            font-size: 1.2rem;
+        }
+
+        .section-header h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .preset-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .chip:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: #fff;
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary), #4f46e5);
+            color: #fff;
+            border: none;
+            padding: 0.85rem 1.5rem;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* AI Triage Display Panel */
+        .ai-result-section {
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-result-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .triage-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-dim);
+            text-align: center;
+            gap: 1rem;
+            padding: 2rem 0;
+        }
+
+        .triage-placeholder i {
+            font-size: 3rem;
+            opacity: 0.4;
+        }
+
+        .triage-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .triage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .triage-id {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .triage-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            background: rgba(10, 15, 26, 0.4);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-glass);
+        }
+
+        .detail-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.7rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .badge-critical { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-high { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge-medium { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-low { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        .badge-category { background: rgba(129, 140, 248, 0.15); color: #a5b4fc; border: 1px solid rgba(129, 140, 248, 0.3); }
+        .badge-team { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3); }
+
+        .ticket-text-preview {
+            background: rgba(10, 15, 26, 0.3);
+            border-left: 3px solid var(--primary);
+            padding: 0.85rem 1rem;
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Tickets Table / List Section */
+        .tickets-section {
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 350px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        .search-box input {
+            width: 100%;
+            background: rgba(10, 15, 26, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            color: var(--text-main);
+            outline: none;
+            font-size: 0.85rem;
+        }
+
+        .tickets-table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 0.85rem 1rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        td {
+            padding: 1rem;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .ticket-desc-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-glass);
+            padding: 1.5rem;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            background: rgba(9, 13, 22, 0.9);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <span class="brand-title">TicketMind AI</span>
+                    <span class="brand-badge">PRO</span>
+                </div>
+            </a>
+            <div class="status-pill">
+                <div class="pulse-dot"></div>
+                <span>LLM Engine Active</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Automated Support Ticket Triage</h1>
+            <p>Empowered by LLM semantic reasoning to automatically categorize, prioritize, and route customer tickets instantly.</p>
+        </section>
+
+        <!-- Stats Overview -->
+        <section class="stats-grid">
+            <div class="glass-panel stat-card">
+                <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-total">0</h3>
+                    <p>Total Processed</p>
+                </div>
+            </div>
+
+            <div class="glass-panel stat-card">
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+                    <i class="fa-solid fa-fire"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-critical">0</h3>
+                    <p>Critical Priority</p>
+                </div>
+            </div>
+
+            <div class="glass-panel stat-card">
+                <div class="stat-icon" style="background: rgba(6, 182, 212, 0.15); color: #67e8f9;">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="stat-teams">6</h3>
+                    <p>Active Teams</p>
+                </div>
+            </div>
+
+            <div class="glass-panel stat-card">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>&lt; 1.2s</h3>
+                    <p>Avg Triage Time</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace (Submit Form + Realtime AI Result) -->
+        <div class="content-grid">
+            <!-- Left: Create Ticket Form -->
+            <section class="glass-panel form-section">
+                <div class="section-header">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <h2>Submit New Support Ticket</h2>
+                </div>
+
+                <div class="form-group">
+                    <label for="ticketDescription">Describe the Customer Issue</label>
+                    <textarea id="ticketDescription" placeholder="e.g. User cannot complete checkout on step 3. Payment gateway returns error 402 with HTTP 500 failure..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Quick Test Samples</label>
+                    <div class="preset-chips">
+                        <span class="chip" onclick="fillPreset('Database keeps crashing on high load during checkout!')"><i class="fa-solid fa-database"></i> DB Crash</span>
+                        <span class="chip" onclick="fillPreset('Can we add a dark mode toggle to the user profile settings?')"><i class="fa-solid fa-wand-magic-sparkles"></i> Feature Req</span>
+                        <span class="chip" onclick="fillPreset('I was double charged on my monthly subscription invoice.')"><i class="fa-solid fa-credit-card"></i> Billing Issue</span>
+                        <span class="chip" onclick="fillPreset('Potential vulnerability found in user authentication endpoint.')"><i class="fa-solid fa-shield-halved"></i> Security Warning</span>
+                    </div>
+                </div>
+
+                <button id="btnSubmit" class="btn-submit" onclick="submitTicket()">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Triage & Categorize with AI</span>
+                </button>
+            </section>
+
+            <!-- Right: Real-time AI Triage Drawer -->
+            <section class="glass-panel ai-result-section">
+                <div class="section-header">
+                    <i class="fa-solid fa-robot"></i>
+                    <h2>AI Triage Output</h2>
+                </div>
+
+                <div id="triageContent">
+                    <div class="triage-placeholder">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <p>Submit a support ticket on the left to see instant AI categorization & routing.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Ticket History Grid -->
+        <section class="glass-panel tickets-section">
+            <div class="table-controls">
+                <div class="section-header" style="margin: 0;">
+                    <i class="fa-solid fa-list-check"></i>
+                    <h2>Live Support Queue</h2>
+                </div>
+
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Filter tickets..." oninput="filterTickets()">
+                </div>
+            </div>
+
+            <div class="tickets-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Assigned Team</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketsTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">Loading tickets database...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 TicketMind AI • Autonomous Support Triage Architecture</p>
+    </footer>
+
+    <script>
+        let allTickets = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTickets();
+            loadStats();
+        });
+
+        function fillPreset(text) {
+            document.getElementById('ticketDescription').value = text;
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/dashboard/stats');
+                const data = await res.json();
+                document.getElementById('stat-total').innerText = data.total_tickets || 0;
+            } catch (err) {
+                console.error('Failed to load stats:', err);
+            }
+        }
+
+        async function loadTickets() {
+            try {
+                const res = await fetch('/api/tickets/');
+                allTickets = await res.json();
+                renderTicketsTable(allTickets);
+                updateCriticalCount(allTickets);
+                document.getElementById('stat-total').innerText = allTickets.length;
+            } catch (err) {
+                console.error('Failed to load tickets:', err);
+                document.getElementById('ticketsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #ef4444; padding: 2rem;">Failed to connect to backend server.</td>
+                    </tr>
+                `;
+            }
+        }
+
+        function updateCriticalCount(tickets) {
+            const criticals = tickets.filter(t => (t.priority || '').toLowerCase() === 'critical').length;
+            document.getElementById('stat-critical').innerText = criticals;
+        }
+
+        function renderTicketsTable(tickets) {
+            const tbody = document.getElementById('ticketsTableBody');
+            if (!tickets || tickets.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">No tickets logged yet. Submit a new ticket above!</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = tickets.map(t => `
+                <tr>
+                    <td style="font-family: monospace; font-weight: 600; color: var(--primary-accent);">#TK-${t.id}</td>
+                    <td class="ticket-desc-cell" title="${t.description}">${t.description}</td>
+                    <td><span class="badge badge-category">${t.category || 'General'}</span></td>
+                    <td><span class="badge badge-${(t.priority || 'medium').toLowerCase()}">${t.priority || 'Medium'}</span></td>
+                    <td><span class="badge badge-team">${t.team || 'General'}</span></td>
+                    <td><span style="color: #34d399; font-weight: 500;"><i class="fa-solid fa-circle-dot" style="font-size:0.65rem; margin-right:4px;"></i> ${t.status || 'Open'}</span></td>
+                    <td style="color: var(--text-dim); font-size: 0.8rem;">${new Date(t.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterTickets() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allTickets.filter(t => 
+                (t.description && t.description.toLowerCase().includes(query)) ||
+                (t.category && t.category.toLowerCase().includes(query)) ||
+                (t.team && t.team.toLowerCase().includes(query)) ||
+                (t.priority && t.priority.toLowerCase().includes(query))
+            );
+            renderTicketsTable(filtered);
+        }
+
+        async function submitTicket() {
+            const descEl = document.getElementById('ticketDescription');
+            const btn = document.getElementById('btnSubmit');
+            const resultBox = document.getElementById('triageContent');
+            
+            const description = descEl.value.trim();
+            if (!description) {
+                alert('Please enter a ticket description first.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner"></div> <span>Analyzing via LLM...</span>`;
+
+            resultBox.innerHTML = `
+                <div class="triage-placeholder">
+                    <div class="spinner" style="width:36px; height:36px; border-width:3px; border-top-color: var(--primary);"></div>
+                    <p style="color: var(--primary-accent); font-weight: 500;">LLM is classifying ticket, determining priority & routing team...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch('/api/tickets/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description })
+                });
+
+                if (!res.ok) throw new Error('API error');
+                const ticket = await res.json();
+
+                // Render result in AI Output drawer
+                resultBox.innerHTML = `
+                    <div class="triage-card">
+                        <div class="triage-header">
+                            <span class="triage-id"><i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Triage Successful</span>
+                            <span class="triage-id">Ticket #TK-${ticket.id}</span>
+                        </div>
+
+                        <div class="triage-details">
+                            <div class="detail-box">
+                                <span class="detail-label">Category</span>
+                                <span class="badge badge-category"><i class="fa-solid fa-folder-tree"></i> ${ticket.category}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">Priority</span>
+                                <span class="badge badge-${(ticket.priority || 'medium').toLowerCase()}"><i class="fa-solid fa-triangle-exclamation"></i> ${ticket.priority}</span>
+                            </div>
+                            <div class="detail-box">
+                                <span class="detail-label">Routed Team</span>
+                                <span class="badge badge-team"><i class="fa-solid fa-people-group"></i> ${ticket.team}</span>
+                            </div>
+                        </div>
+
+                        <div class="ticket-text-preview">
+                            "${ticket.description}"
+                        </div>
+                    </div>
+                `;
+
+                descEl.value = '';
+                loadTickets();
+            } catch (err) {
+                console.error(err);
+                resultBox.innerHTML = `
+                    <div class="triage-placeholder" style="color: #ef4444;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <p>Error classifying ticket. Please check backend connection.</p>
+                    </div>
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-microchip"></i> <span>Triage & Categorize with AI</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
